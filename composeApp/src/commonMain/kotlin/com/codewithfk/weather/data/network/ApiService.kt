@@ -1,6 +1,7 @@
 package com.codewithfk.weather.data.network
 
 import com.codewithfk.weather.data.models.WeatherResponse
+import dev.icerock.moko.geo.LatLng
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -10,7 +11,7 @@ import kotlinx.serialization.json.Json
 
 class ApiService {
 
-    private val baseURL = "https://api.openweathermap.org/data/2.5/weather?q="
+    private val baseURL = "https://api.openweathermap.org/data/2.5/weather?"
     private val httpClient = HttpClient {
         install(ContentNegotiation) {
             json(Json {
@@ -22,8 +23,8 @@ class ApiService {
         }
     }
 
-    suspend fun getWeather(city: String): WeatherResponse {
-        return httpClient.get("$baseURL$city&appid=bff1a3434be828ea41b92d03560528fd&units=metric").body()
+    suspend fun getWeather(location: LatLng): WeatherResponse {
+        return httpClient.get("${baseURL}lat=${location.latitude}&lon=${location.longitude}&appid=bff1a3434be828ea41b92d03560528fd&units=metric").body()
     }
 
 
