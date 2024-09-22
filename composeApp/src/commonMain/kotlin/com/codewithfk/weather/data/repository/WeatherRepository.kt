@@ -7,4 +7,5 @@ class WeatherRepository {
     private val apiService = ApiService()
 
     suspend fun fetchWeather(location: LatLng) = apiService.getWeather(location)
+    suspend fun fetchForecast(location: LatLng) = apiService.getForecast(location)
 }
