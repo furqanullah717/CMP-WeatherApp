@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -29,44 +30,75 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cmpweather.composeapp.generated.resources.Res
 import cmpweather.composeapp.generated.resources.ic_cloud
 import cmpweather.composeapp.generated.resources.ic_humidity
 import cmpweather.composeapp.generated.resources.ic_notification
 import cmpweather.composeapp.generated.resources.ic_wind
 import com.codewithfk.weather.data.models.WeatherResponse
+import dev.icerock.moko.geo.compose.BindLocationTrackerEffect
+import dev.icerock.moko.geo.compose.LocationTrackerAccuracy
+import dev.icerock.moko.geo.compose.rememberLocationTrackerFactory
+import dev.icerock.moko.permissions.PermissionState
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun HomeScreen() {
-    val viewModel = remember { HomeScreeViewModel() }
-    LaunchedEffect(Unit) {
-        viewModel.fetchWeather("London")
-    }
+    val factory = rememberLocationTrackerFactory(LocationTrackerAccuracy.Best)
+    val locationTracker = remember { factory.createLocationTracker() }
+    val viewModel = viewModel { HomeScreeViewModel(locationTracker) }
+    BindLocationTrackerEffect(locationTracker)
     val state = viewModel.state.collectAsState()
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        when (state.value) {
-            is HomeScreenState.Loading -> {
-                CircularProgressIndicator()
-                Text(text = "Loading...")
+        val permissionState = viewModel.permissionState.collectAsState()
+        when (permissionState.value) {
+            PermissionState.Granted -> {
+                LaunchedEffect(key1 = Unit) {
+                    viewModel.updateLocationData()
+                }
+                when (state.value) {
+                    is HomeScreenState.Loading -> {
+                        CircularProgressIndicator()
+                        Text(text = "Loading...")
 
+                    }
+
+                    is HomeScreenState.Success -> {
+                        val weather = (state.value as HomeScreenState.Success).data
+                        HomeScreenContent(weather)
+                    }
+
+                    is HomeScreenState.Error -> {
+                        val message = (state.value as HomeScreenState.Error).message
+                        Text(text = message)
+                    }
+                }
             }
 
-            is HomeScreenState.Success -> {
-                val weather = (state.value as HomeScreenState.Success).data
-                HomeScreenContent(weather)
+            PermissionState.DeniedAlways -> {
+                Button(onClick = {
+                    locationTracker.permissionsController.openAppSettings()
+                }) {
+                    Text(text = "Grant Permission")
+                }
             }
 
-            is HomeScreenState.Error -> {
-                val message = (state.value as HomeScreenState.Error).message
-                Text(text = message)
+            else -> {
+                Button(onClick = {
+                    viewModel.provideLocationPermission()
+                }) {
+                    Text(text = "Grant Permission")
+                }
             }
         }
+
+
     }
 }
 
@@ -108,7 +140,8 @@ fun HomeScreenContent(weather: WeatherResponse) {
             Spacer(modifier = Modifier.size(32.dp))
 
             Column(
-                modifier = Modifier.padding(16.dp).fillMaxWidth().clip(shape = RoundedCornerShape(16.dp))
+                modifier = Modifier.padding(16.dp).fillMaxWidth()
+                    .clip(shape = RoundedCornerShape(16.dp))
                     .background(color = Color.White.copy(alpha = 0.1f)).padding(16.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.CenterHorizontally

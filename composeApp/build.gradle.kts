@@ -51,6 +51,11 @@ kotlin {
             implementation(libs.ktor.client.serialization)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
+            //add view model
+            implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
+            api("dev.icerock.moko:geo:0.6.0")
+            // Compose Multiplatform
+            api("dev.icerock.moko:geo-compose:0.6.0")
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
